@@ -8,5 +8,6 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
+	gopkg.in/telebot.v4 v4.0.0-beta.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

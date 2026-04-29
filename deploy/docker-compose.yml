@@ -1,0 +1,10 @@
+services:
+  api:
+    build: ../api
+    ports:
+      - "8888:8888"
+
+  bot:
+    build: ../bot
+    depends_on:
+      - api
