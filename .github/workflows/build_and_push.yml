@@ -15,7 +15,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        service: [api, bot]
+        service: [ api, bot ]
     steps:
       - uses: actions/checkout@v6
 
@@ -35,12 +35,12 @@ jobs:
             type=raw,value=latest
             type=sha,format=short
             type=ref,event=tag
-      
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./${{ matrix.service }}/Dockerfile
-          tags: ${{ id.meta.outputs.tags }}
-          labels: ${{ id.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           push: true
