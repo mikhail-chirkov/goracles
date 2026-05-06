@@ -1,10 +1,14 @@
 services:
   api:
-    build: ../api
+    build:
+      context: ../
+      dockerfile: api/Dockerfile
     ports:
       - "8888:8888"
 
   bot:
-    build: ../bot
+    build:
+      context: ../
+      dockerfile: bot/Dockerfile
     depends_on:
       - api

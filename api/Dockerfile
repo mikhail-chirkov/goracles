@@ -1,4 +1,4 @@
-FROM golang:1.26-alpine
+FROM golang:1.26-alpine as build
 
 WORKDIR /app
 
@@ -6,6 +6,18 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -v -o ./build/app .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o ./api-service ./api
 
-CMD [ "./build/app" ]
+FROM alpine:3.22 
+
+WORKDIR /app
+
+RUN adduser -D -u 11111 appuser
+
+COPY --from=build --chown=appuser:appuser /app/api-service .
+
+USER appuser
+
+EXPOSE 8080
+
+CMD [ "./api-service" ]
