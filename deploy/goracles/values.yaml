@@ -1,1 +1,13 @@
-favoriteDrink: monster
+api:
+  repository: ghcr.io/mikhail-chirkov/goracles-api
+  tag: latest
+  port: 80
+  containerPort: 8080
+  imagePullPolicy: IfNotPresent
+
+bot:
+  repository: ghcr.io/mikhail-chirkov/goracles-bot
+  tag: latest
+  imagePullPolicy: IfNotPresent
+  tokenSecret: "bot-token"
+

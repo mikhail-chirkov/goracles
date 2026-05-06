@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-bot
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-bot
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-bot
+    spec:
+      containers:
+        - name: bot
+          image: {{ .Values.bot.repository }}
+          tag: {{ .Values.bot.tag }}
+          imagePullPolicy: {{ .Values.bot.imagePullPolicy }}
+          env:
+            - name: API_URL
+              value: "http://{{ .Release.Name }}-api:{{ .Values.api.port }}"
+            - name: BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.bot.tokenSecret }}
+                  key: token
+          
+
