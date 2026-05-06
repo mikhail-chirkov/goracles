@@ -19,10 +19,3 @@ spec:
           env:
             - name: API_URL
               value: "http://{{ .Release.Name }}-api:{{ .Values.api.port }}"
-            - name: BOT_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.bot.tokenSecret }}
-                  key: token
-          
-

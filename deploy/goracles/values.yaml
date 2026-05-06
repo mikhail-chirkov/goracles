@@ -9,5 +9,3 @@ bot:
   repository: ghcr.io/mikhail-chirkov/goracles-bot
   tag: latest
   imagePullPolicy: IfNotPresent
-  tokenSecret: "bot-token"
-
