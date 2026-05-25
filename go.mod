@@ -3,6 +3,7 @@ module github.com/mikhail-chirkov/goracles
 go 1.25.7
 
 require (
+	github.com/bradfitz/latlong v0.0.0-20170410180902-f3db6d0dff40
 	github.com/caarlos0/env/v11 v11.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
