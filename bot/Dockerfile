@@ -14,7 +14,7 @@ FROM alpine:3.22
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates tzdata
 RUN adduser -D -u 11111 appuser && mkdir /data && chown appuser:appuser /data
 
 COPY --from=build --chown=appuser:appuser /app/bot-service .
