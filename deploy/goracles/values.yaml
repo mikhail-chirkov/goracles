@@ -3,11 +3,11 @@ api:
   tag: latest
   port: 80
   containerPort: 8080
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
 
 bot:
   repository: ghcr.io/mikhail-chirkov/goracles-bot
   tag: latest
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
 
 secretName: goracles-env

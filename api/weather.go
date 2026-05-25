@@ -31,8 +31,7 @@ type radarResponse struct {
 	Records []radarRecord `json:"radar"`
 }
 
-// TODO: time/time zone
-func (client *weatherClient) getRadarData(latitude float64, longtitude float64, distance int, endTime time.Time) (radarResponse, *handlerError) {
+func (client *weatherClient) getRadarData(latitude float64, longtitude float64, distance int, startTime time.Time, endTime time.Time, timezone string) (radarResponse, *handlerError) {
 	// construct the endpoint url
 	requestUrl := client.BaseURL.JoinPath("radar")
 
@@ -41,9 +40,10 @@ func (client *weatherClient) getRadarData(latitude float64, longtitude float64, 
 	queryParameters.Add("distance", strconv.Itoa(distance))
 	queryParameters.Add("lat", strconv.FormatFloat(latitude, 'f', -1, 64))
 	queryParameters.Add("lon", strconv.FormatFloat(longtitude, 'f', -1, 64))
-	queryParameters.Add("date", time.Now().Format(time.RFC3339))
+	queryParameters.Add("date", startTime.Format(time.RFC3339))
 	queryParameters.Add("last_date", endTime.Format(time.RFC3339))
 	queryParameters.Add("format", "plain")
+	queryParameters.Add("tz", timezone)
 	requestUrl.RawQuery = queryParameters.Encode()
 
 	// create the request

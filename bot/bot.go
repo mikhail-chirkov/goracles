@@ -50,7 +50,7 @@ func (a *botApp) handleMessage(ctx context.Context, b *bot.Bot, message *models.
 
 	if _, err := a.store.ensureUser(ctx, userID); err != nil {
 		log.Printf("ensure user failed: %v", err)
-		a.sendText(ctx, b, message.Chat.ID, "I could not load your settings. Please try again in a moment.")
+		a.sendText(ctx, b, message.Chat.ID, "Could not load user settings. Please try again in a moment.")
 		return
 	}
 
@@ -82,7 +82,7 @@ func (a *botApp) handleCallback(ctx context.Context, b *bot.Bot, update *models.
 	userID := query.From.ID
 	if _, err := a.store.ensureUser(ctx, userID); err != nil {
 		log.Printf("ensure user failed: %v", err)
-		a.editText(ctx, b, chatID, messageID, "I could not load your settings. Please try again in a moment.", mainMenuKeyboard())
+		a.editText(ctx, b, chatID, messageID, "Could not load user settings. Please try again in a moment.", mainMenuKeyboard())
 		return
 	}
 
@@ -93,7 +93,7 @@ func (a *botApp) handleCallback(ctx context.Context, b *bot.Bot, update *models.
 		defaults, err := a.store.getDefaults(ctx, userID)
 		if err != nil {
 			log.Printf("get defaults failed: %v", err)
-			a.editText(ctx, b, chatID, messageID, "I could not load your settings. Please try again in a moment.", mainMenuKeyboard())
+			a.editText(ctx, b, chatID, messageID, "Could not load user settings. Please try again in a moment.", mainMenuKeyboard())
 			return
 		}
 		a.editText(ctx, b, chatID, messageID, defaultsText(defaults), mainMenuKeyboard())
@@ -169,7 +169,16 @@ func (a *botApp) handleLocation(ctx context.Context, b *bot.Bot, message *models
 	}
 
 	a.sendTextWithMarkup(ctx, b, message.Chat.ID, "Checking the forecast...", &models.ReplyKeyboardRemove{RemoveKeyboard: true})
-	windows, err := a.client.predict(ctx, message.Location.Latitude, message.Location.Longitude, defaults)
+
+	timezone, location, err := timezoneForCoordinates(message.Location.Latitude, message.Location.Longitude)
+	if err != nil {
+		log.Printf("timezone lookup failed: %v", err)
+		a.sendText(ctx, b, message.Chat.ID, "Failed to determine the timezone for that location.")
+		a.sendMenu(ctx, b, message.Chat.ID, userID)
+		return
+	}
+
+	windows, err := a.client.predict(ctx, message.Location.Latitude, message.Location.Longitude, defaults, time.Now().In(location), timezone)
 	if err != nil {
 		log.Printf("predict failed: %v", err)
 		a.sendText(ctx, b, message.Chat.ID, "Prediction failed: "+err.Error())
@@ -177,7 +186,7 @@ func (a *botApp) handleLocation(ctx context.Context, b *bot.Bot, message *models
 		return
 	}
 
-	a.sendText(ctx, b, message.Chat.ID, formatPrediction(windows))
+	a.sendText(ctx, b, message.Chat.ID, formatPrediction(windows, location))
 	a.sendMenu(ctx, b, message.Chat.ID, userID)
 }
 
@@ -185,7 +194,7 @@ func (a *botApp) sendMenu(ctx context.Context, b *bot.Bot, chatID int64, userID 
 	defaults, err := a.store.getDefaults(ctx, userID)
 	if err != nil {
 		log.Printf("get defaults failed: %v", err)
-		a.sendText(ctx, b, chatID, "I could not load your settings. Please try again in a moment.")
+		a.sendText(ctx, b, chatID, "Failed to load user settings. Please try again in a moment.")
 		return
 	}
 
@@ -196,7 +205,7 @@ func (a *botApp) editMenu(ctx context.Context, b *bot.Bot, chatID int64, message
 	defaults, err := a.store.getDefaults(ctx, userID)
 	if err != nil {
 		log.Printf("get defaults failed: %v", err)
-		a.editText(ctx, b, chatID, messageID, "I could not load your settings. Please try again in a moment.", mainMenuKeyboard())
+		a.editText(ctx, b, chatID, messageID, "Failed to load user settings. Please try again in a moment.", mainMenuKeyboard())
 		return
 	}
 
@@ -343,7 +352,7 @@ func defaultsText(defaults userDefaults) string {
 	)
 }
 
-func formatPrediction(windows []predictWindow) string {
+func formatPrediction(windows []predictWindow, location *time.Location) string {
 	if len(windows) == 0 {
 		return "The API did not return any available prediction windows."
 	}
@@ -355,7 +364,7 @@ func formatPrediction(windows []predictWindow) string {
 		lines = append(lines, fmt.Sprintf(
 			"%d. %s - %s, %.2f mm/h",
 			i+1,
-			window.StartTime.Format(time.Kitchen),
+			window.StartTime.In(location).Format("15:04 MST"),
 			window.Description,
 			window.Precipitation,
 		))

@@ -31,7 +31,7 @@ func newPredictClient(baseURL *url.URL) *predictClient {
 	}
 }
 
-func (c *predictClient) predict(ctx context.Context, latitude, longitude float64, defaults userDefaults) ([]predictWindow, error) {
+func (c *predictClient) predict(ctx context.Context, latitude, longitude float64, defaults userDefaults, startTime time.Time, timezone string) ([]predictWindow, error) {
 	endpoint := c.baseURL.JoinPath("predict")
 
 	query := endpoint.Query()
@@ -40,6 +40,8 @@ func (c *predictClient) predict(ctx context.Context, latitude, longitude float64
 	query.Set("radius", strconv.Itoa(int(defaults.DefaultRadiusKM*1000)))
 	query.Set("tripDuration", strconv.Itoa(defaults.TripDurationMin))
 	query.Set("timeFrame", strconv.Itoa(defaults.TimeFrameMin))
+	query.Set("startTime", startTime.Format(time.RFC3339))
+	query.Set("timezone", timezone)
 	endpoint.RawQuery = query.Encode()
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)

@@ -14,13 +14,19 @@ import (
 
 func TestPredictComponent(t *testing.T) {
 
-	timeNow := time.Now()
+	timezone := "Europe/Berlin"
+	location, err := time.LoadLocation(timezone)
+	assert.NoError(t, err)
+	timeNow := time.Date(2026, 5, 25, 12, 0, 0, 0, location)
 
 	// create the mock weather api
 	mockBrightskyAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/radar" {
 			assert.Error(t, fmt.Errorf("Endpoint %s is not allowed", r.URL.Path))
 		}
+		assert.Equal(t, timeNow.Format(time.RFC3339), r.URL.Query().Get("date"))
+		assert.Equal(t, timeNow.Add(20*time.Minute).Format(time.RFC3339), r.URL.Query().Get("last_date"))
+		assert.Equal(t, timezone, r.URL.Query().Get("tz"))
 
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -48,6 +54,8 @@ func TestPredictComponent(t *testing.T) {
 	query.Add("radius", "10000")
 	query.Add("timeFrame", "20")
 	query.Add("tripDuration", "10")
+	query.Add("startTime", timeNow.Format(time.RFC3339))
+	query.Add("timezone", timezone)
 	request.URL.RawQuery = query.Encode()
 
 	// execute
@@ -59,9 +67,9 @@ func TestPredictComponent(t *testing.T) {
 	assert.Equal(t, http.StatusOK, result.StatusCode)
 
 	var windows []window
-	err := json.NewDecoder(result.Body).Decode(&windows)
-	if err != nil {
-		assert.Error(t, err)
+	decodeErr := json.NewDecoder(result.Body).Decode(&windows)
+	if decodeErr != nil {
+		assert.Error(t, decodeErr)
 	}
 
 	// should be 3 windows total

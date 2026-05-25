@@ -40,7 +40,9 @@ func newServer(client *weatherClient) *server {
 type predictParameters struct {
 	Latitude   float64
 	Longtitude float64
-	Radius   int
+	Radius     int
+	StartTime  time.Time
+	Timezone   string
 	TimeFrame  time.Duration
 	WindowSize int
 }
@@ -62,6 +64,19 @@ func parsePredictRequest(query *url.Values) (predictParameters, *handlerError) {
 		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: err, Message: "Radius is invalid"}
 	}
 	radius = max(radius, 1000)
+
+	startTime, err := time.Parse(time.RFC3339, query.Get("startTime"))
+	if err != nil {
+		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: err, Message: "Start time is invalid"}
+	}
+
+	timezone := query.Get("timezone")
+	if timezone == "" {
+		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: fmt.Errorf("missing timezone"), Message: "Timezone is invalid"}
+	}
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: err, Message: "Timezone is invalid"}
+	}
 
 	timeFrameRaw, err := strconv.ParseInt(query.Get("timeFrame"), 10, 64)
 	if err != nil {
@@ -85,7 +100,7 @@ func parsePredictRequest(query *url.Values) (predictParameters, *handlerError) {
 		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: err, Message: "The trip duration must be at least 5 minutes"}
 	}
 
-	return predictParameters{Latitude: latitude, Longtitude: longtitude, Radius: radius, TimeFrame: timeFrame, WindowSize: windowSize}, nil
+	return predictParameters{Latitude: latitude, Longtitude: longtitude, Radius: radius, StartTime: startTime, Timezone: timezone, TimeFrame: timeFrame, WindowSize: windowSize}, nil
 }
 
 func (s *server) predictHandler(writer http.ResponseWriter, reader *http.Request) *handlerError {
@@ -96,7 +111,14 @@ func (s *server) predictHandler(writer http.ResponseWriter, reader *http.Request
 		return handlerErr
 	}
 
-	radarData, handlerErr := s.weatherClient.getRadarData(parameters.Latitude, parameters.Longtitude, parameters.Radius, time.Now().Add(parameters.TimeFrame))
+	radarData, handlerErr := s.weatherClient.getRadarData(
+		parameters.Latitude,
+		parameters.Longtitude,
+		parameters.Radius,
+		parameters.StartTime,
+		parameters.StartTime.Add(parameters.TimeFrame),
+		parameters.Timezone,
+	)
 	if handlerErr != nil {
 		return handlerErr
 	}
