@@ -12,6 +12,7 @@ FROM alpine:3.22
 
 WORKDIR /app
 
+RUN apk add --no-cache ca-certificates
 RUN adduser -D -u 11111 appuser
 
 COPY --from=build --chown=appuser:appuser /app/api-service .

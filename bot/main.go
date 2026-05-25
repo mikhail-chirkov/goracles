@@ -1,16 +1,39 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
-	"net/http"
+	"os"
+	"os/signal"
+
+	"github.com/joho/godotenv"
+
+	"github.com/go-telegram/bot"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("beep")
-	})
+	_ = godotenv.Load()
 
-	// TODO: config
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", 7777), nil))
+	cfg, cfgError := loadConfig()
+	if cfgError != nil {
+		log.Fatalf("Failed to load the configuration with error %v", cfgError)
+	}
+
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	store, err := openUserStore(ctx, cfg.DatabasePath)
+	if err != nil {
+		log.Fatalf("Failed to open the database: %v", err)
+	}
+	defer store.close()
+
+	app := newBotApp(store, newPredictClient(cfg.APIURL))
+
+	b, err := bot.New(cfg.BotToken, bot.WithDefaultHandler(app.handleUpdate))
+	if err != nil {
+		log.Fatalf("Failed to start bot %v", err)
+	}
+
+	b.Start(ctx)
 }

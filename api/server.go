@@ -40,7 +40,7 @@ func newServer(client *weatherClient) *server {
 type predictParameters struct {
 	Latitude   float64
 	Longtitude float64
-	Distance   int
+	Radius   int
 	TimeFrame  time.Duration
 	WindowSize int
 }
@@ -57,11 +57,11 @@ func parsePredictRequest(query *url.Values) (predictParameters, *handlerError) {
 		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: err, Message: "Longtitude is invalid"}
 	}
 
-	distance, err := strconv.Atoi(query.Get("distance"))
+	radius, err := strconv.Atoi(query.Get("radius"))
 	if err != nil {
-		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: err, Message: "Distance is invalid"}
+		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: err, Message: "Radius is invalid"}
 	}
-	distance = max(distance, 1000)
+	radius = max(radius, 1000)
 
 	timeFrameRaw, err := strconv.ParseInt(query.Get("timeFrame"), 10, 64)
 	if err != nil {
@@ -85,7 +85,7 @@ func parsePredictRequest(query *url.Values) (predictParameters, *handlerError) {
 		return predictParameters{}, &handlerError{StatusCode: http.StatusBadRequest, Error: err, Message: "The trip duration must be at least 5 minutes"}
 	}
 
-	return predictParameters{Latitude: latitude, Longtitude: longtitude, Distance: distance, TimeFrame: timeFrame, WindowSize: windowSize}, nil
+	return predictParameters{Latitude: latitude, Longtitude: longtitude, Radius: radius, TimeFrame: timeFrame, WindowSize: windowSize}, nil
 }
 
 func (s *server) predictHandler(writer http.ResponseWriter, reader *http.Request) *handlerError {
@@ -96,7 +96,7 @@ func (s *server) predictHandler(writer http.ResponseWriter, reader *http.Request
 		return handlerErr
 	}
 
-	radarData, handlerErr := s.weatherClient.getRadarData(parameters.Latitude, parameters.Longtitude, parameters.Distance, time.Now().Add(parameters.TimeFrame))
+	radarData, handlerErr := s.weatherClient.getRadarData(parameters.Latitude, parameters.Longtitude, parameters.Radius, time.Now().Add(parameters.TimeFrame))
 	if handlerErr != nil {
 		return handlerErr
 	}
@@ -114,6 +114,9 @@ func (s *server) predictHandler(writer http.ResponseWriter, reader *http.Request
 		}
 
 		interval, err := reduceGridToInterval(record.Precipitation, recordTime)
+		if err != nil {
+			return &handlerError{StatusCode: http.StatusInternalServerError, Error: fmt.Errorf("Failed to compute intervals: %v", err), Message: "Internal error"}
+		}
 		intervals = append(intervals, interval)
 	}
 

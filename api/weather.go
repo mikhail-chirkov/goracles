@@ -56,8 +56,8 @@ func (client *weatherClient) getRadarData(latitude float64, longtitude float64, 
 	request.Header.Add("Accept", "application/json")
 
 	// do the request
-	response, requestError := client.HTTPClient.Do(request)
-	if requestError != nil {
+	response, err := client.HTTPClient.Do(request)
+	if err != nil {
 		return radarResponse{}, &handlerError{StatusCode: http.StatusBadGateway, Error: err, Message: "Unable to access the Brightsky API"}
 	}
 
@@ -78,8 +78,8 @@ func (client *weatherClient) getRadarData(latitude float64, longtitude float64, 
 
 	// parse the response
 	var radarData radarResponse
-	decodeError := json.NewDecoder(response.Body).Decode(&radarData)
-	if decodeError != nil {
+	err = json.NewDecoder(response.Body).Decode(&radarData)
+	if err != nil {
 		return radarResponse{}, &handlerError{StatusCode: http.StatusInternalServerError, Error: err, Message: "Internal error"}
 	}
 

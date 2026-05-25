@@ -70,9 +70,8 @@ type window struct {
 }
 
 func computeWindowsByMaxIntensity(intervalsInWindow int, intervals []interval) ([]*window, error) {
-	// TODO: comparison
-	if intervalsInWindow >= len(intervals) {
-		return []*window{}, fmt.Errorf("The duration of trip is longer than the collected radar date")
+	if intervalsInWindow > len(intervals) {
+		return []*window{}, fmt.Errorf("The duration of trip is longer than the collected radar data")
 	}
 
 	var windows []*window

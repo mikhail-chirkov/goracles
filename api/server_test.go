@@ -45,7 +45,7 @@ func TestPredictComponent(t *testing.T) {
 	query := url.Values{}
 	query.Add("latitude", "55.55")
 	query.Add("longtitude", "44.44")
-	query.Add("distance", "10000")
+	query.Add("radius", "10000")
 	query.Add("timeFrame", "20")
 	query.Add("tripDuration", "10")
 	request.URL.RawQuery = query.Encode()

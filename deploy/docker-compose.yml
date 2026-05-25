@@ -4,7 +4,7 @@ services:
       context: ../
       dockerfile: api/Dockerfile
     ports:
-      - "8888:8888"
+      - "8080:8080"
 
   bot:
     build:
@@ -12,3 +12,12 @@ services:
       dockerfile: bot/Dockerfile
     depends_on:
       - api
+    environment:
+      API_URL: http://api:8080
+      BOT_TOKEN: ${BOT_TOKEN}
+      DATABASE_PATH: /data/goracles-bot.sqlite
+    volumes:
+      - bot-data:/data
+
+volumes:
+  bot-data:
