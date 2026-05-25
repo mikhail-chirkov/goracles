@@ -173,6 +173,7 @@ func (a *botApp) handleLocation(ctx context.Context, b *bot.Bot, message *models
 	if err != nil {
 		log.Printf("predict failed: %v", err)
 		a.sendText(ctx, b, message.Chat.ID, "Prediction failed: "+err.Error())
+		a.sendMenu(ctx, b, message.Chat.ID, userID)
 		return
 	}
 
