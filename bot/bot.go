@@ -340,7 +340,7 @@ func timeFrameKeyboard() *models.InlineKeyboardMarkup {
 }
 
 func menuText(defaults userDefaults) string {
-	return "Goracles rain prediction\n\n" + defaultsText(defaults) + "\n\nPress Predict and share your location to find the driest start time."
+	return "Press Predict and share your location to find the best trip time."
 }
 
 func defaultsText(defaults userDefaults) string {
@@ -357,18 +357,26 @@ func formatPrediction(windows []predictWindow, location *time.Location) string {
 		return "The API did not return any available prediction windows."
 	}
 
-	limit := min(len(windows), 5)
-	lines := []string{"Best start times:"}
-	for i := range limit {
-		window := windows[i]
+	lines := []string{"Best start windows:"}
+	for i, window := range windows {
 		lines = append(lines, fmt.Sprintf(
-			"%d. %s - %s, %.2f mm/h",
+			"%d. %s, %s, %.2f mm/h",
 			i+1,
-			window.StartTime.In(location).Format("15:04 MST"),
+			formatPredictionWindowTime(window, location),
 			window.Description,
 			window.Precipitation,
 		))
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func formatPredictionWindowTime(window predictWindow, location *time.Location) string {
+	startTime := window.StartTime.In(location)
+	if window.EndTime.IsZero() {
+		return startTime.Format("15:04 MST")
+	}
+
+	endTime := window.EndTime.In(location)
+	return fmt.Sprintf("%s-%s", startTime.Format("15:04"), endTime.Format("15:04 MST"))
 }

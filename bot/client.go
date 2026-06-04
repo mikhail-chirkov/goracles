@@ -20,6 +20,7 @@ type predictWindow struct {
 	Precipitation float64   `json:"precipitation"`
 	Description   string    `json:"description"`
 	StartTime     time.Time `json:"startTime"`
+	EndTime       time.Time `json:"endTime"`
 }
 
 func newPredictClient(baseURL *url.URL) *predictClient {

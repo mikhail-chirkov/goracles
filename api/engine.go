@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const intervalDuration = time.Minute * 5
+
 type interval struct {
 	Intensity        float64
 	SquaredIntensity float64
@@ -44,7 +46,6 @@ func reduceGridToInterval(precipitationGrid [][]int, recordTime time.Time) (inte
 }
 
 func tripDurationToIntervals(tripDuration time.Duration) int {
-	intervalDuration := time.Minute * 5
 	// do ceiling division
 	return int((tripDuration + intervalDuration - 1) / intervalDuration)
 }
@@ -67,6 +68,7 @@ type window struct {
 	Precipitation float64   `json:"precipitation"`
 	Description   string    `json:"description"`
 	StartTime     time.Time `json:"startTime"`
+	EndTime       time.Time `json:"endTime"`
 }
 
 func computeWindowsByMaxIntensity(intervalsInWindow int, intervals []interval) ([]*window, error) {
@@ -92,17 +94,50 @@ func computeWindowsByMaxIntensity(intervalsInWindow int, intervals []interval) (
 			windows = append(windows, &window{
 				Precipitation: intensitySum / float64(intervalsInWindow),
 				Description:   meanIntesityToString(intensitySum / float64(intervalsInWindow)),
-				StartTime:     firstInterval.Time})
+				StartTime:     firstInterval.Time,
+				EndTime:       firstInterval.Time.Add(time.Duration(intervalsInWindow) * intervalDuration)})
 
 			// remove the first interval
 			intensitySum -= firstInterval.MaxIntensity
 		}
 	}
 
-	// sort by the lowest precipitation
+	windows = mergeConsecutiveWindows(windows, intervalsInWindow)
+
+	// sort by the lowest precipitation/starting time
 	slices.SortFunc(windows, func(a, b *window) int {
-		return cmp.Compare(a.Precipitation, b.Precipitation)
+		if result := cmp.Compare(a.Precipitation, b.Precipitation); result != 0 {
+			return result
+		}
+
+		return a.StartTime.Compare(b.StartTime)
 	})
 
 	return windows, nil
+}
+
+func mergeConsecutiveWindows(windows []*window, intervalsInWindow int) []*window {
+	if len(windows) == 0 {
+		return windows
+	}
+
+	merged := []*window{windows[0]}
+	for _, next := range windows[1:] {
+		last := merged[len(merged)-1]
+		nextConsecutiveStart := last.EndTime.Add(-time.Duration(intervalsInWindow-1) * intervalDuration)
+
+		if samePrecipitation(last.Precipitation, next.Precipitation) && next.StartTime.Equal(nextConsecutiveStart) {
+			last.EndTime = next.EndTime
+			continue
+		}
+
+		merged = append(merged, next)
+	}
+
+	return merged
+}
+
+func samePrecipitation(a, b float64) bool {
+	const epsilon = 1e-9
+	return math.Abs(a-b) < epsilon
 }
